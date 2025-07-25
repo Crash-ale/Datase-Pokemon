@@ -1,0 +1,2301 @@
+<!DOCTYPE html>
+
+<html lang="it">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pokédex Ordinato</title>
+<style>
+body { font-family: Arial, sans-serif; background: linear-gradient(to bottom, #f0f8ff, #e6e6fa); padding: 20px; }
+h1, h2 { text-align: center; }
+.controls { text-align: center; margin-bottom: 20px; }
+.grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+.card { background: white; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 180px; height: 320px; display: flex; flex-direction: column; align-items: center; padding: 10px; transition: transform 0.2s; box-sizing: border-box; }
+.card:hover { transform: scale(1.05); }
+.img-container { width: 100%; height: 160px; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+.img-container img { max-height: 100%; max-width: 100%; object-fit: contain; }
+.card h3 { min-height: 3.2em; text-align: center; margin: 0 0 5px; }
+.regione { margin-top: auto; }
+.badge { display: inline-block; margin-top: 5px; padding: 2px 6px; background: #ffcc00; border-radius: 6px; font-size: 0.8em; }
+.shiny-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 20px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.shiny-toggle input {
+  display: none;
+}
+
+.shiny-toggle .slider {
+  width: 80px;
+  height: 26px;
+  background-color: #e0e0e0;
+  border-radius: 999px;
+  position: relative;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.shiny-toggle .slider::before {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  top: 3px;
+  left: 4px;
+  transition: transform 0.3s ease;
+  z-index: 2;
+}
+
+.shiny-toggle input:checked + .slider {
+  background-color: gold;
+}
+
+.shiny-toggle input:checked + .slider .icon {
+  opacity: 1;
+  filter: drop-shadow(0 0 4px gold); /* effetto glow */
+}
+.shiny-toggle input:checked + .slider::before {
+  transform: translateX(52px); /* ← aggiornato per slider largo 60px */
+}
+
+.shiny-toggle .icon {
+  width: 18px;
+  height: 18px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0.6; /* visibile anche da spento */
+  z-index: 1;
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+.shiny-toggle input:checked + .slider .icon {
+  opacity: 1;
+  filter: drop-shadow(0 0 4px gold);
+  animation: sparkle 0.7s ease-in-out;
+  transform: translate(-50%, -50%) scale(1); /* base centrale */
+}
+
+.shiny-toggle .label-text {
+  font-weight: bold;
+  font-size: 0.95rem;
+  color: #333;
+ }
+ 
+.controls-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.control-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.control-block label {
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+#searchInput {
+  padding: 5px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+@keyframes sparkle {
+  0%   { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+  25%  { transform: translate(-50%, -50%) scale(1.2) rotate(10deg); opacity: 0.9; }
+  50%  { transform: translate(-50%, -50%) scale(1) rotate(-10deg); opacity: 1; }
+  75%  { transform: translate(-50%, -50%) scale(1.3) rotate(15deg); opacity: 0.95; }
+  100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+}
+
+.legend-images {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.legend-icon {
+  height: 8vw;
+  max-height: 100px;
+  min-height: 50px;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .legend-icon {
+    height: 50px;
+  }
+
+  .legend-images {
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .legend-icon {
+    height: 10vw;
+  }
+}
+
+/* Media query per schermi piccoli (es. smartphone) */
+@media (max-width: 600px) {
+  .legend-icon {
+    height: 12vw;
+  }
+}
+
+  .legend-images {
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+.legend-icon:hover {
+  transform: scale(1.1);
+}
+.hero-banner {
+  background-image: url("images/Notte.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding: 60px 20px;
+  text-align: center;
+  color: white;
+  border-radius: 12px;
+  margin-bottom: 40px;
+  position: relative;
+}
+
+
+#noResults {
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #555;
+  background: #fff3cd;
+  padding: 10px 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: none;
+}
+
+#resetButton:hover {
+  background: #0069d9;
+}
+.caught-checkbox {
+  transform: scale(1.2);
+  margin-right: 6px;
+  cursor: pointer;
+}
+.caught-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.caught-toggle input {
+  display: none;
+}
+
+.toggle-slider {
+  width: 36px;
+  height: 20px;
+  background-color: #ccc;
+  border-radius: 999px;
+  position: relative;
+  transition: background-color 0.3s ease;
+}
+
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  top: 3px;
+  left: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+}
+
+.caught-toggle input:checked + .toggle-slider {
+  background-color: #4caf50;
+}
+
+.caught-toggle input:checked + .toggle-slider::before {
+  transform: translateX(16px);
+}
+
+.label-text {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.card .regione,
+.card .badge {
+  display: none;
+}
+
+.card {
+  height: auto;
+  padding-bottom: 16px;
+}
+
+.card.caught {
+  border: 2px solid #4caf50;
+  box-shadow: 0 0 12px rgba(76, 175, 80, 0.4);
+  transition: box-shadow 0.3s ease, border 0.3s ease;
+}
+
+/* [ Tutti ] [ Kanto ] [ # Pokédex A–Z ] [ Catturato: Tutti / Solo sì / Solo no ] */
+
+
+.hero-banner {
+  position: relative;
+  padding: 40px 30px 40px 30px; /* più spazio a destra per il blocco */
+  overflow: hidden; /* previene sbordamenti */
+}
+
+.glass-box {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  padding: 10px 16px;
+  color: #fff;
+  font-size: 0.85rem;
+  box-shadow: 0 0 20px rgba(0,0,0,0.15);
+  max-width: 90%;
+  margin: 0 auto 20px auto;     /* centrato in mobile */
+  position: relative;
+  z-index: 10;
+}
+
+
+
+.glass-box:hover {
+  transform: scale(1.02); /* leggera animazione al passaggio */
+}
+
+.glass-box h4 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.glass-box ul {
+  margin: 0;
+  padding-left: 18px;
+  list-style: none;
+}
+
+.glass-box li {
+  margin-bottom: 4px;
+  line-height: 1.2em;
+  color: #eee;
+}
+
+    
+.fav-toggle {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 6px;
+}
+.star-icon {
+  font-size: 1.2rem;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+.fav-checkbox:checked + .star-icon {
+  opacity: 1;
+  filter: drop-shadow(0 0 4px gold);
+}
+.card.fav {
+  border: 2px solid gold;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+}
+
+@media (max-width: 768px) {
+  .glass-box {
+    position: absolute;      
+    margin: 10px auto 0 auto;         /* centrato */
+    width: 90%;                       /* occupa quasi tutta la larghezza */
+    max-width: 400px;                 /* limite massimo */
+    transform: none !important;       /* rimuove eventuali effetti */
+    text-align: left;
+  }
+
+  .hero-banner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+@media (min-width: 768px) {
+  .hero-banner {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .glass-box {
+    position: relative;
+    margin-left: auto; /* spinge a destra */
+    margin-right: clamp(10px, 2vw, 30px);
+    top: 0;
+    right: 0;
+    align-self: flex-start;
+    max-width: 240px;
+  }
+}
+
+@media (min-width: 992px) {
+  .hero-banner {
+    position: relative;
+  }
+
+  .glass-box {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    max-width: 240px;
+    margin: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .glass-box {
+    max-height: 180px;        /* altezza massima visibile */
+    overflow-y: auto;         /* scroll verticale solo se serve */
+    padding-right: 12px;      /* spazio per scrollbar */
+  }
+}
+
+.progress-bar {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 10px;
+  padding: 10px 16px;
+  color: #fff;
+  font-weight: bold;
+  text-align: center;
+  margin: 12px auto 25px auto;
+  max-width: 440px;
+  font-size: 0.95rem;
+}
+
+
+/* Definizione di default (desktop) */
+.card {
+  width: 180px;
+  height: auto; /* lascia che l’altezza si adatti */
+}
+
+/* Layout mobile (max 600 px) */
+@media (max-width: 600px) {
+  .card {
+    flex: 0 1 calc(50% - 24px); /* due card per riga, tenendo conto del gap */
+    width: auto;                /* non indicare width fissa */
+    padding: 8px;
+  }
+}
+.grid {
+  gap: 12px; /* riduci il gap se necessario */
+}
+
+
+.fav-toggle {
+  font-size: 1.3rem;
+  opacity: 0.5;
+  cursor: pointer;
+  transition: opacity 0.3s, filter 0.3s;
+  user-select: none;
+  margin-top: 6px;
+}
+.card.fav .fav-toggle {
+  opacity: 1;
+  filter: drop-shadow(0 0 4px gold);
+}
+
+.card {
+  perspective: 1000px;
+  position: relative;
+  width: 180px;
+  height: 320px;
+}
+.card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.8s;
+}
+.card.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+.card-front, .card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  background: white;
+  padding: 10px;
+  box-sizing: border-box;
+}
+.card-back {
+  transform: rotateY(180deg);
+  background: #f1f1f1;
+  overflow-y: auto;
+}
+
+.card-front .fav-toggle {
+  display: block;
+  margin: 8px auto 0 auto;
+  font-size: 24px;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+}
+
+.card {
+  position: relative;
+}
+.card-front .fav-toggle {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  font-size: 22px;
+}
+
+.card-back .fav-toggle {
+  display: none !important;
+}
+
+.card.flipped .card-front .fav-toggle {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+
+
+
+
+.card .fav-toggle {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  font-size: 22px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.3s, filter 0.3s;
+}
+
+.card.fav .fav-toggle {
+  opacity: 1;
+  filter: drop-shadow(0 0 4px gold);
+}
+
+/* Rimuove vecchie regole di nascondimento */
+.card-front .fav-toggle,
+.card-back .fav-toggle,
+.card.flipped .card-front .fav-toggle {
+  display: initial !important;
+  visibility: visible;
+}
+
+
+.card-front {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  transform: rotateY(0deg);
+  z-index: 2;
+}
+
+.card-back {
+  transform: rotateY(180deg);
+  backface-visibility: hidden;
+  z-index: 1;
+}
+
+.card-front .fav-toggle {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 22px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.3s, filter 0.3s;
+  backface-visibility: hidden;
+  z-index: 3;
+}
+
+.card.fav .card-front .fav-toggle {
+  opacity: 1;
+  filter: drop-shadow(0 0 4px gold);
+}
+/* SHINY MODE – stile Magikarp/Gyarados/Ponyta */
+.card.shiny-mode {
+  background-color: #1c1f26 !important;
+  border: 1px solid #00e5ff !important;
+  box-shadow: 0 0 6px #00e5ff66 !important;
+  transition: all 0.3s ease;
+}
+
+.card.shiny-mode .title,
+.card.shiny-mode .info,
+.card.shiny-mode .dex-number {
+  color: #cceeff !important;
+}
+
+body.shiny-mode {
+  background-color: #10141a !important;
+  color: #cceeff !important;
+}
+
+body.shiny-mode .star {
+  filter: drop-shadow(0 0 2px #00e5ff);
+}
+
+body.shiny-mode .switch input:checked + .slider {
+  background-color: #00e5ff !important;
+}
+
+
+
+
+
+/* SHINY MODE - correzione definitiva sfondo bianco */
+body.shiny-mode {
+  background-color: #0e1217 !important;
+  color: #c9f6ff !important;
+}
+
+.card.shiny-mode {
+  background-color: #181c22 !important;
+  background: none !important;
+  border: 2px solid #4de3f5 !important;
+  box-shadow: 0 0 12px #4de3f577 !important;
+  color: #c9f6ff !important;
+}
+
+.card.shiny-mode * {
+  color: #c9f6ff !important;
+}
+
+body.shiny-mode .star {
+  filter: drop-shadow(0 0 3px #4de3f5);
+}
+
+body.shiny-mode .switch input:checked + .slider {
+  background-color: #4de3f5 !important;
+}
+</style>
+<style>
+/* SHINY MODE – tema finale coerente e leggibile */
+body.shiny-mode {
+  background-color: #10141a !important;
+  color: #d9f4ff !important;
+}
+
+.card.shiny-mode {
+  background-color: #1b1f26 !important;
+  background: none !important;
+  border: 2px solid #30d7ff !important;
+  box-shadow: 0 0 10px #30d7ff55 !important;
+  transition: all 0.3s ease;
+  color: #d9f4ff !important;
+}
+
+.card.shiny-mode * {
+  color: #d9f4ff !important;
+  background: transparent !important;
+}
+
+body.shiny-mode .star {
+  filter: drop-shadow(0 0 2px #30d7ff);
+}
+
+body.shiny-mode .switch input:checked + .slider {
+  background-color: #30d7ff !important;
+}
+</style><style>
+/* SHINY MODE – correzione definitiva sfondo blur */
+.card.shiny-mode {
+  background: #1b1f26 !important;
+  backdrop-filter: none !important;
+  border: 2px solid #30d7ff !important;
+  box-shadow: 0 0 10px #30d7ff55 !important;
+  color: #d9f4ff !important;
+}
+
+.card.shiny-mode * {
+  color: #d9f4ff !important;
+  background: transparent !important;
+}
+
+body.shiny-mode {
+  background-color: #10141a !important;
+  color: #d9f4ff !important;
+}
+
+body.shiny-mode .star {
+  filter: drop-shadow(0 0 2px #30d7ff);
+}
+
+body.shiny-mode .switch input:checked + .slider {
+  background-color: #30d7ff !important;
+}
+</style><style>
+/* SHINY MODE – animazioni per transizione fluida delle card */
+.card {
+  transition: background-color 0.5s ease, color 0.5s ease, box-shadow 0.5s ease, border 0.5s ease;
+  transform-origin: center center;
+}
+
+.card.shiny-mode {
+  animation: shineIn 0.4s ease;
+}
+
+@keyframes shineIn {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.2;
+    filter: brightness(0.7);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+/* Modalità shiny: tema scuro leggibile */
+body.shiny-mode .card {
+  background-color: #1e1e1e !important;
+  color: white !important;
+}
+
+/* Titoli e scritte */
+body.shiny-mode .card h3,
+body.shiny-mode .card label {
+  color: white !important;
+}
+
+/* Toggle cerchietto spento */
+body.shiny-mode .card input[type="checkbox"] {
+  accent-color: white !important;
+}
+
+/* Toggle acceso (moderno browser) */
+body.shiny-mode .card input[type="checkbox"]:checked {
+  accent-color: #00ccff !important;
+}
+/* Pallino toggle SEMPRE grigio */
+body.shiny-mode .card .toggle-slider::before {
+  background-color: #ccc !important;
+  box-shadow: 0 0 2px #999 !important;
+}
+
+/* Toggle acceso (sfondo azzurro) */
+body.shiny-mode .card .caught-toggle input:checked + .toggle-slider {
+  background-color: #00ccff !important;
+}
+
+/* Toggle spento (sfondo grigio scuro) */
+body.shiny-mode .card .caught-toggle input:not(:checked) + .toggle-slider {
+  background-color: #444 !important;
+}
+
+
+body.shiny-mode .card .toggle-slider::before {
+  background-color: #ccc !important; /* Pallino grigio SEMPRE */
+  box-shadow: 0 0 2px #999;           /* Bordo morbido */
+}
+
+/* Modalità shiny: il toggle acceso è azzurro, ma il pallino resta grigio */
+body.shiny-mode .card .caught-toggle input:checked + .toggle-slider {
+  background-color: #00ccff !important; /* Sfondo slider attivo */
+}
+
+body.shiny-mode .card .caught-toggle input:checked + .toggle-slider::before {
+  background-color: #ccc !important;    /* Pallino resta grigio */
+  box-shadow: 0 0 2px #999 !important;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+</style></head>
+<body>
+<section class="hero-banner">
+<div class="legend-images">
+<img alt="Yveltal" class="legend-icon" src="images/Kalos/Yveltal.PNG"/>
+<img alt="Kyogre" class="legend-icon" src="images/Hoenn/Kyogre.PNG"/>
+<img alt="Rayquaza" class="legend-icon" src="images/Hoenn/Rayquaza.PNG"/>
+<img alt="Arceus" class="legend-icon" src="images/Sinnoh/Arceus.PNG"/>
+</div>
+<h1 style="font-size: 2.5rem; margin: 0;">Pokédex</h1>
+<p style="font-size: 1.2rem; margin-top: 10px;">Scopri dove catturarli e come averli shiny</p>
+<div class="controls-row">
+<div class="control-block">
+<label for="regionSelect">Filtra per regione:</label>
+<select id="regionSelect">
+<option value="Tutte">Tutte</option>
+<option value="Kanto">Kanto</option>
+<option value="Johto">Johto</option>
+<option value="Hoenn">Hoenn</option>
+<option value="Sinnoh">Sinnoh</option>
+<option value="Unima">Unima</option>
+<option value="Kalos">Kalos</option>
+<option value="Alola">Alola</option>
+<option value="Galar">Galar</option>
+<option value="Hisui">Hisui</option>
+<option value="Paldea">Paldea</option>
+<option value="Sconosciuto">Sconosciuto</option>
+</select>
+</div>
+<div class="control-block">
+<label for="caughtSelect">Filtro cattura:</label>
+<select id="caughtSelect">
+<option value="all">Tutti</option>
+<option value="caught">Solo catturati</option>
+<option value="uncaught">Solo non catturati</option>
+</select>
+</div>
+<div class="control-block">
+<label for="sortSelect">Ordina per:</label>
+<select id="sortSelect">
+<option value="dex-asc"># Pokédex (crescente)</option>
+<option value="dex-desc"># Pokédex (decrescente)</option>
+<option value="name-asc">Nome A–Z</option>
+<option value="name-desc">Nome Z–A</option>
+<option value="fav-desc">Preferiti</option></select>
+</div>
+<div class="control-block">
+<label for="searchInput">Cerca:</label>
+<input id="searchInput" placeholder="Nome o numero Pokédex" type="text"/>
+</div>
+<label class="shiny-toggle">
+<input id="shinyOnly" type="checkbox"/>
+<span class="slider">
+<img alt="shiny" class="icon" src="shiny.png"/>
+</span>
+</label>
+</div>
+<div style="text-align: center; margin-top: 10px;">
+<button id="resetButton" style="padding: 8px 16px; background-color: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer;">
+    Reimposta Filtri
+  </button>
+</div>
+<div id="titleContainer" style="display: flex; justify-content: center; align-items: center; gap: 20px; color: white; margin-top: 20px;">
+<h3 id="regionTitle" style="margin: 0;">Pokémon di Tutte le regioni</h3>
+<h3 id="counter" style="margin: 0;"></h3>
+</div>
+<div class="progress-bar" id="progress-summary">
+  Caricamento statistiche...
+</div>
+<p id="noResults" style="text-align: center; font-weight: bold; display: none; margin-top: 20px;">
+  Nessun Pokémon trovato.
+</p>
+</section>
+<div class="grid" id="pokedexGrid">
+<div class="card" data-region="Kanto" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Articuno" src="images/Kanto/Articuno.PNG"/></div>
+<h3>#144 Articuno</h3>
+<div class="regione">Kanto</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Galar" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Articuno di Galar" src="images/Galar/Articuno di Galar.PNG"/></div>
+<h3>#144 Articuno di Galar</h3>
+<div class="regione">Galar</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny); shiny tramite evento</div></div></div>
+<div class="card" data-region="Kanto" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Zapdos" src="images/Kanto/Zapdos.PNG"/></div>
+<h3>#145 Zapdos</h3>
+<div class="regione">Kanto</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Galar" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Zapdos di Galar" src="images/Galar/Zapdos di Galar.PNG"/></div>
+<h3>#145 Zapdos di Galar</h3>
+<div class="regione">Galar</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny); shiny tramite evento</div></div></div>
+<div class="card" data-region="Kanto" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Moltres" src="images/Kanto/Moltres.PNG"/></div>
+<h3>#146 Moltres</h3>
+<div class="regione">Kanto</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Galar" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Moltres di Galar" src="images/Galar/Moltres di Galar.PNG"/></div>
+<h3>#146 Moltres di Galar</h3>
+<div class="regione">Galar</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny); shiny tramite evento</div></div></div>
+<div class="card" data-region="Kanto" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Mewtwo" src="images/Kanto/Mewtwo.PNG"/></div>
+<h3>#150 Mewtwo</h3>
+<div class="regione">Kanto</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Kanto" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Mew" src="images/Kanto/Mew.PNG"/></div>
+<h3>#151 Mew</h3>
+<div class="regione">Kanto</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Pokéball Plus / vari eventi (shiny lock); shiny disponibile solo in giapponi anni fa</div></div></div>
+<div class="card" data-region="Johto" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Raikou" src="images/Johto/Raikou.PNG"/></div>
+<h3>#243 Raikou</h3>
+<div class="regione">Johto</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Johto" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Entei" src="images/Johto/Entei.PNG"/></div>
+<h3>#244 Entei</h3>
+<div class="regione">Johto</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Johto" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Suicune" src="images/Johto/Suicune.PNG"/></div>
+<h3>#245 Suicune</h3>
+<div class="regione">Johto</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Johto" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Lugia" src="images/Johto/Lugia.PNG"/></div>
+<h3>#249 Lugia</h3>
+<div class="regione">Johto</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Johto" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Ho-Oh" src="images/Johto/Ho-Oh.PNG"/></div>
+<h3>#250 Ho-Oh</h3>
+<div class="regione">Johto</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Johto" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Celebi" src="images/Johto/Celebi.PNG"/></div>
+<h3>#251 Celebi</h3>
+<div class="regione">Johto</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Vari eventi in cui veniva dato shiny</div></div></div>
+<div class="card" data-region="Hoenn" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Regirock" src="images/Hoenn/Regirock.PNG"/></div>
+<h3>#377 Regirock</h3>
+<div class="regione">Hoenn</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure Storyline (shiny possibile)</div></div></div>
+<div class="card" data-region="Hoenn" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Regice" src="images/Hoenn/Regice.PNG"/></div>
+<h3>#378 Regice</h3>
+<div class="regione">Hoenn</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure Storyline (shiny possibile)</div></div></div>
+<div class="card" data-region="Hoenn" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Registeel" src="images/Hoenn/Registeel.PNG"/></div>
+<h3>#379 Registeel</h3>
+<div class="regione">Hoenn</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure Storyline (shiny possibile)</div></div></div>
+<div class="card" data-region="Hoenn" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Latias" src="images/Hoenn/Latias.PNG"/></div>
+<h3>#380 Latias</h3>
+<div class="regione">Hoenn</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (Shiny Possibile)</div></div></div>
+<div class="card" data-region="Hoenn" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Latios" src="images/Hoenn/Latios.PNG"/></div>
+<h3>#381 Latios</h3>
+<div class="regione">Hoenn</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (Shiny Possibile)</div></div></div>
+<div class="card" data-region="Hoenn" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Kyogre" src="images/Hoenn/Kyogre.PNG"/></div>
+<h3>#382 Kyogre</h3>
+<div class="regione">Hoenn</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Hoenn" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Groudon" src="images/Hoenn/Groudon.PNG"/></div>
+<h3>#383 Groudon</h3>
+<div class="regione">Hoenn</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Hoenn" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Rayquaza" src="images/Hoenn/Rayquaza.PNG"/></div>
+<h3>#384 Rayquaza</h3>
+<div class="regione">Hoenn</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Mr. Merenda (no shiny); (evento natale 2024 shiny)</div></div></div>
+<div class="card" data-region="Hoenn" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Jirachi" src="images/Hoenn/Jirachi.PNG"/></div>
+<h3>#385 Jirachi</h3>
+<div class="regione">Hoenn</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>—<br/><br/><strong>Metodo:</strong><br/>impossibile su switch</div></div></div>
+<div class="card" data-region="Hoenn" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Deoxys" src="images/Hoenn/Deoxys.PNG"/></div>
+<h3>#386 Deoxys</h3>
+<div class="regione">Hoenn</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>—<br/><br/><strong>Metodo:</strong><br/>catturabile in ORAS; shiny ottenibile su rosso fuoco o smeraldo tramite evento</div></div></div>
+<div class="card" data-region="Sinnoh" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Uxie" src="images/Sinnoh/Uxie.PNG"/></div>
+<h3>#480 Uxie</h3>
+<div class="regione">Sinnoh</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Leggende Arceus<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Legend Arceus (no shiny)</div></div></div>
+<div class="card" data-region="Sinnoh" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Mesprit" src="images/Sinnoh/Mesprit.PNG"/></div>
+<h3>#481 Mesprit</h3>
+<div class="regione">Sinnoh</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Leggende Arceus<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Legend Arceus (no shiny)</div></div></div>
+<div class="card" data-region="Sinnoh" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Azelf" src="images/Sinnoh/Azelf.PNG"/></div>
+<h3>#482 Azelf</h3>
+<div class="regione">Sinnoh</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Leggende Arceus<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Legend Arceus (no shiny)</div></div></div>
+<div class="card" data-region="Sinnoh" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Dialga" src="images/Sinnoh/Dialga.PNG"/></div>
+<h3>#483 Dialga</h3>
+<div class="regione">Sinnoh</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto, Leggende Arceus<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); raid 5 stelle (no shiny; )Legend Arceus (no shiny)</div></div></div>
+<div class="card" data-region="Sinnoh" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Palkia" src="images/Sinnoh/Palkia.PNG"/></div>
+<h3>#484 Palkia</h3>
+<div class="regione">Sinnoh</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto, Leggende Arceus<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); raid 5 stelle (no shiny; )Legend Arceus (no shiny)</div></div></div>
+<div class="card" data-region="Sinnoh" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Heatran" src="images/Sinnoh/Heatran.PNG"/></div>
+<h3>#485 Heatran</h3>
+<div class="regione">Sinnoh</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Leggende Arceus<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Legend Arceus (no shiny)</div></div></div>
+<div class="card" data-region="Sinnoh" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Regigigas" src="images/Sinnoh/Regigigas.PNG"/></div>
+<h3>#486 Regigigas</h3>
+<div class="regione">Sinnoh</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Leggende Arceus<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Legend Arceus (no shiny)</div></div></div>
+<div class="card" data-region="Sinnoh" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Giratina" src="images/Sinnoh/Giratina.PNG"/></div>
+<h3>#487 Giratina</h3>
+<div class="regione">Sinnoh</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Leggende Arceus<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Legend Arceus (no shiny)</div></div></div>
+<div class="card" data-region="Sinnoh" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Cresselia" src="images/Sinnoh/Cresselia.PNG"/></div>
+<h3>#488 Cresselia</h3>
+<div class="regione">Sinnoh</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Leggende Arceus<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Legend Arceus (no shiny)</div></div></div>
+<div class="card" data-region="Sinnoh" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Phione" src="images/Sinnoh/Phione.PNG"/></div>
+<h3>#489 Phione</h3>
+<div class="regione">Sinnoh</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Leggende Arceus<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny); shiny ottenibile su diamante lucente e perla splendente</div></div></div>
+<div class="card" data-region="Sinnoh" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Manaphy" src="images/Sinnoh/Manaphy.PNG"/></div>
+<h3>#490 Manaphy</h3>
+<div class="regione">Sinnoh</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Leggende Arceus<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny); shiny ottenibile su diamante lucente e perla splendente</div></div></div>
+<div class="card" data-region="Sinnoh" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Darkrai" src="images/Sinnoh/Darkrai.PNG"/></div>
+<h3>#491 Darkrai</h3>
+<div class="regione">Sinnoh</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Leggende Arceus<br/><br/><strong>Metodo:</strong><br/>se possiedi dati salvataggio diamante o perla</div></div></div>
+<div class="card" data-region="Sinnoh" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Shaymin" src="images/Sinnoh/Shaymin.PNG"/></div>
+<h3>#492 Shaymin</h3>
+<div class="regione">Sinnoh</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Leggende Arceus<br/><br/><strong>Metodo:</strong><br/>se possiedi dati salvataggio spada o scudo</div></div></div>
+<div class="card" data-region="Sinnoh" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Arceus" src="images/Sinnoh/Arceus.PNG"/></div>
+<h3>#493 Arceus</h3>
+<div class="regione">Sinnoh</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Leggende Arceus<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny); shiny ottenibile su diamante lucente e perla splendente</div></div></div>
+<div class="card" data-region="Unima" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Victini" src="images/Unima/Victini.PNG"/></div>
+<h3>#494 Victini</h3>
+<div class="regione">Unima</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny)</div></div></div>
+<div class="card" data-region="Unima" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Cobalion" src="images/Unima/Cobalion.PNG"/></div>
+<h3>#638 Cobalion</h3>
+<div class="regione">Unima</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Unima" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Terrakion" src="images/Unima/Terrakion.PNG"/></div>
+<h3>#639 Terrakion</h3>
+<div class="regione">Unima</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Unima" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Virizion" src="images/Unima/Virizion.PNG"/></div>
+<h3>#640 Virizion</h3>
+<div class="regione">Unima</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Unima" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Tornadus" src="images/Unima/Tornadus.PNG"/></div>
+<h3>#641 Tornadus</h3>
+<div class="regione">Unima</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Leggende Arceus<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Legend Arceus (no shiny)</div></div></div>
+<div class="card" data-region="Unima" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Thundurus" src="images/Unima/Thundurus.PNG"/></div>
+<h3>#642 Thundurus</h3>
+<div class="regione">Unima</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Leggende Arceus<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Legend Arceus (no shiny)</div></div></div>
+<div class="card" data-region="Unima" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Reshiram" src="images/Unima/Reshiram.PNG"/></div>
+<h3>#643 Reshiram</h3>
+<div class="regione">Unima</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (Shiny Possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Unima" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Zekrom" src="images/Unima/Zekrom.PNG"/></div>
+<h3>#644 Zekrom</h3>
+<div class="regione">Unima</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (Shiny Possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Unima" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Landorus" src="images/Unima/Landorus.PNG"/></div>
+<h3>#645 Landorus</h3>
+<div class="regione">Unima</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Leggende Arceus<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile); Legend Arceus (no shiny)</div></div></div>
+<div class="card" data-region="Unima" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Kyurem" src="images/Unima/Kyurem.PNG"/></div>
+<h3>#646 Kyurem</h3>
+<div class="regione">Unima</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (Shiny Possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Unima" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Keldeo" src="images/Unima/Keldeo.PNG"/></div>
+<h3>#647 Keldeo</h3>
+<div class="regione">Unima</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny)</div></div></div>
+<div class="card" data-region="Unima" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Meloetta" src="images/Unima/Meloetta.PNG"/></div>
+<h3>#648 Meloetta</h3>
+<div class="regione">Unima</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto<br/><br/><strong>Metodo:</strong><br/>Completando il pokedex di leggende arceus su pokemon home</div></div></div>
+<div class="card" data-region="Unima" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Genesect" src="images/Unima/Genesect.PNG"/></div>
+<h3>#649 Genesect</h3>
+<div class="regione">Unima</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>solo tramite evento</div></div></div>
+<div class="card" data-region="Kalos" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Xerneas" src="images/Kalos/Xerneas.PNG"/></div>
+<h3>#716 Xerneas</h3>
+<div class="regione">Kalos</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile)</div></div></div>
+<div class="card" data-region="Kalos" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Yveltal" src="images/Kalos/Yveltal.PNG"/></div>
+<h3>#717 Yveltal</h3>
+<div class="regione">Kalos</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>—<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile)</div></div></div>
+<div class="card" data-region="Kalos" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Zygarde" src="images/Kalos/Zygarde.PNG"/></div>
+<h3>#718 Zygarde</h3>
+<div class="regione">Kalos</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile)</div></div></div>
+<div class="card" data-region="Kalos" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Diancie" src="images/Kalos/Diancie.PNG"/></div>
+<h3>#719 Diancie</h3>
+<div class="regione">Kalos</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>—<br/><br/><strong>Metodo:</strong><br/>solo su pokemon go</div></div></div>
+<div class="card" data-region="Kalos" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Hoopa" src="images/Kalos/Hoopa.PNG"/></div>
+<h3>#720 Hoopa</h3>
+<div class="regione">Kalos</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>—<br/><br/><strong>Metodo:</strong><br/>evento su pokemon go o oras</div></div></div>
+<div class="card" data-region="Kalos" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Volcanion" src="images/Kalos/Volcanion.PNG"/></div>
+<h3>#721 Volcanion</h3>
+<div class="regione">Kalos</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>solo tramite evento</div></div></div>
+<div class="card" data-region="Alola" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Tipo Zero" src="images/Alola/Tipo Zero.PNG"/></div>
+<h3>#772 Tipo Zero</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny)</div></div></div>
+<div class="card" data-region="Alola" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Silvally" src="images/Alola/Silvally.PNG"/></div>
+<h3>#773 Silvally</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny)</div></div></div>
+<div class="card" data-region="Alola" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Tapu Koko" src="images/Alola/Tapu Koko.PNG"/></div>
+<h3>#785 Tapu Koko</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile)</div></div></div>
+<div class="card" data-region="Alola" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Tapu Lele" src="images/Alola/Tapu Lele.PNG"/></div>
+<h3>#786 Tapu Lele</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile)</div></div></div>
+<div class="card" data-region="Alola" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Tapu Bulu" src="images/Alola/Tapu Bulu.PNG"/></div>
+<h3>#787 Tapu Bulu</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile)</div></div></div>
+<div class="card" data-region="Alola" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Tapu Fini" src="images/Alola/Tapu Fini.PNG"/></div>
+<h3>#788 Tapu Fini</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile)</div></div></div>
+<div class="card" data-region="Alola" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Cosmog" src="images/Alola/Cosmog.PNG"/></div>
+<h3>#789 Cosmog</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny); shiny ottenibile su ultra sole o luna?</div></div></div>
+<div class="card" data-region="Alola" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Cosmoem" src="images/Alola/Cosmoem.PNG"/></div>
+<h3>#790 Cosmoem</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny); shiny ottenibile su ultra sole o luna?</div></div></div>
+<div class="card" data-region="Alola" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Solgaleo" src="images/Alola/Solgaleo.PNG"/></div>
+<h3>#791 Solgaleo</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (Shiny Possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Alola" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Lunala" src="images/Alola/Lunala.PNG"/></div>
+<h3>#792 Lunala</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (Shiny Possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Alola" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Nihilego" src="images/Alola/Nihilego.PNG"/></div>
+<h3>#793 Nihilego</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile)</div></div></div>
+<div class="card" data-region="Alola" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Buzzwole" src="images/Alola/Buzzwole.PNG"/></div>
+<h3>#794 Buzzwole</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile)</div></div></div>
+<div class="card" data-region="Alola" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Pheromosa" src="images/Alola/Pheromosa.PNG"/></div>
+<h3>#795 Pheromosa</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile)</div></div></div>
+<div class="card" data-region="Alola" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Xurkitree" src="images/Alola/Xurkitree.PNG"/></div>
+<h3>#796 Xurkitree</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile)</div></div></div>
+<div class="card" data-region="Alola" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Celesteela" src="images/Alola/Celesteela.PNG"/></div>
+<h3>#797 Celesteela</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile)</div></div></div>
+<div class="card" data-region="Alola" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Kartana" src="images/Alola/Kartana.PNG"/></div>
+<h3>#798 Kartana</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile)</div></div></div>
+<div class="card" data-region="Alola" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Guzzlord" src="images/Alola/Guzzlord.PNG"/></div>
+<h3>#799 Guzzlord</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile)</div></div></div>
+<div class="card" data-region="Alola" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Necrozma" src="images/Alola/Necrozma.PNG"/></div>
+<h3>#800 Necrozma</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (Shiny Possibile); Mr. Merenda (no shiny)</div></div></div>
+<div class="card" data-region="Alola" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Magearna" src="images/Alola/Magearna.PNG"/></div>
+<h3>#801 Magearna</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>—<br/><br/><strong>Metodo:</strong><br/>solo su Ultra sole o luna; shiny o colore antico tramite home con il completamento del pokedex nazionale</div></div></div>
+<div class="card" data-region="Alola" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Marshadow" src="images/Alola/Marshadow.PNG"/></div>
+<h3>#802 Marshadow</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>solo tramite evento</div></div></div>
+<div class="card" data-region="Alola" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Poipole" src="images/Alola/Poipole.PNG"/></div>
+<h3>#803 Poipole</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny); shiny su Ultra sole o luna</div></div></div>
+<div class="card" data-region="Alola" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Naganadel" src="images/Alola/Naganadel.PNG"/></div>
+<h3>#804 Naganadel</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny); shiny su Ultra sole o luna</div></div></div>
+<div class="card" data-region="Alola" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Stakataka" src="images/Alola/Stakataka.PNG"/></div>
+<h3>#805 Stakataka</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile)</div></div></div>
+<div class="card" data-region="Alola" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Blacephalon" src="images/Alola/Blacephalon.PNG"/></div>
+<h3>#806 Blacephalon</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure (shiny possibile)</div></div></div>
+<div class="card" data-region="Alola" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Zeraora" src="images/Alola/Zeraora.PNG"/></div>
+<h3>#807 Zeraora</h3>
+<div class="regione">Alola</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>—<br/><br/><strong>Metodo:</strong><br/>Ottenibile su ultra sole/luna tramite evento, e shiny tramite evento in spada e scudo</div></div></div>
+<div class="card" data-region="Sconosciuto" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Meltan" src="images/Sconosciuto/Meltan.PNG"/></div>
+<h3>#808 Meltan</h3>
+<div class="regione">Sconosciuto</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>—<br/><br/><strong>Metodo:</strong><br/>solo da pokemon go</div></div></div>
+<div class="card" data-region="Sconosciuto" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Melmetal" src="images/Sconosciuto/Melmetal.PNG"/></div>
+<h3>#809 Melmetal</h3>
+<div class="regione">Sconosciuto</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>—<br/><br/><strong>Metodo:</strong><br/>solo da pokemon go</div></div></div>
+<div class="card" data-region="Galar" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Zacian" src="images/Galar/Zacian.PNG"/></div>
+<h3>#888 Zacian</h3>
+<div class="regione">Galar</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny); shiny su evento</div></div></div>
+<div class="card" data-region="Galar" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Zamazenta" src="images/Galar/Zamazenta.PNG"/></div>
+<h3>#889 Zamazenta</h3>
+<div class="regione">Galar</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>—<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny); shiny su evento</div></div></div>
+<div class="card" data-region="Galar" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Eternatus" src="images/Galar/Eternatus.PNG"/></div>
+<h3>#890 Eternatus</h3>
+<div class="regione">Galar</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny); shiny su evento</div></div></div>
+<div class="card" data-region="Galar" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Kubfu" src="images/Galar/Kubfu.PNG"/></div>
+<h3>#891 Kubfu</h3>
+<div class="regione">Galar</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny)</div></div></div>
+<div class="card" data-region="Galar" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Urshifu" src="images/Galar/Urshifu.PNG"/></div>
+<h3>#892 Urshifu</h3>
+<div class="regione">Galar</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny)</div></div></div>
+<div class="card" data-region="Galar" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Zarude" src="images/Galar/Zarude.PNG"/></div>
+<h3>#893 Zarude</h3>
+<div class="regione">Galar</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>solo tramite evento</div></div></div>
+<div class="card" data-region="Galar" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Regieleki" src="images/Galar/Regieleki.PNG"/></div>
+<h3>#894 Regieleki</h3>
+<div class="regione">Galar</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure Storyline (shiny possibile)</div></div></div>
+<div class="card" data-region="Galar" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Regidrago" src="images/Galar/Regidrago.PNG"/></div>
+<h3>#895 Regidrago</h3>
+<div class="regione">Galar</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Dynamax Adventure Storyline (shiny possibile)</div></div></div>
+<div class="card" data-region="Galar" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Glastrier" src="images/Galar/Glastrier.PNG"/></div>
+<h3>#896 Glastrier</h3>
+<div class="regione">Galar</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny)</div></div></div>
+<div class="card" data-region="Galar" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Spectrier" src="images/Galar/Spectrier.PNG"/></div>
+<h3>#897 Spectrier</h3>
+<div class="regione">Galar</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada, Violetto<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny)</div></div></div>
+<div class="card" data-region="Galar" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Calyrex" src="images/Galar/Calyrex.PNG"/></div>
+<h3>#898 Calyrex</h3>
+<div class="regione">Galar</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Spada<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny)</div></div></div>
+<div class="card" data-region="Hisui" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Enamorus" src="images/Hisui/Enamorus.PNG"/></div>
+<h3>#905 Enamorus</h3>
+<div class="regione">Hisui</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+<div class="badge">Shiny</div>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Leggende Arceus<br/><br/><strong>Metodo:</strong><br/>Completando il pokedex di leggende arceus su pokemon home</div></div></div>
+<div class="card" data-region="Paldea" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Wo-Chien" src="images/Paldea/Wo-Chien.PNG"/></div>
+<h3>#1001 Wo-Chien</h3>
+<div class="regione">Paldea</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto<br/><br/><strong>Metodo:</strong><br/>Storyline (Shiny nel raid 5 stelle)</div></div></div>
+<div class="card" data-region="Paldea" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Chien-Pao" src="images/Paldea/Chien-Pao.PNG"/></div>
+<h3>#1002 Chien-Pao</h3>
+<div class="regione">Paldea</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto<br/><br/><strong>Metodo:</strong><br/>Storyline (Shiny nel raid 5 stelle)</div></div></div>
+<div class="card" data-region="Paldea" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Ting-Lu" src="images/Paldea/Ting-Lu.PNG"/></div>
+<h3>#1003 Ting-Lu</h3>
+<div class="regione">Paldea</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto<br/><br/><strong>Metodo:</strong><br/>Storyline (Shiny nel raid 5 stelle)</div></div></div>
+<div class="card" data-region="Paldea" data-shiny="true"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Chi-Yu" src="images/Paldea/Chi-Yu.PNG"/></div>
+<h3>#1004 Chi-Yu</h3>
+<div class="regione">Paldea</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto<br/><br/><strong>Metodo:</strong><br/>Storyline (Shiny nel raid 5 stelle)</div></div></div>
+<div class="card" data-region="Paldea" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Koraidon" src="images/Paldea/Koraidon.PNG"/></div>
+<h3>#1007 Koraidon</h3>
+<div class="regione">Paldea</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny)</div></div></div>
+<div class="card" data-region="Paldea" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Miraidon" src="images/Paldea/Miraidon.PNG"/></div>
+<h3>#1008 Miraidon</h3>
+<div class="regione">Paldea</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny)</div></div></div>
+<div class="card" data-region="Paldea" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Okidogi" src="images/Paldea/Okidogi.PNG"/></div>
+<h3>#1014 Okidogi</h3>
+<div class="regione">Paldea</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny)</div></div></div>
+<div class="card" data-region="Paldea" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Munkidori" src="images/Paldea/Munkidori.PNG"/></div>
+<h3>#1015 Munkidori</h3>
+<div class="regione">Paldea</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny)</div></div></div>
+<div class="card" data-region="Paldea" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Fezandipiti" src="images/Paldea/Fezandipiti.PNG"/></div>
+<h3>#1016 Fezandipiti</h3>
+<div class="regione">Paldea</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny)</div></div></div>
+<div class="card" data-region="Paldea" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Ogerpon" src="images/Paldea/Ogerpon.PNG"/></div>
+<h3>#1017 Ogerpon</h3>
+<div class="regione">Paldea</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny)</div></div></div>
+<div class="card" data-region="Paldea" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Terapagos" src="images/Paldea/Terapagos.PNG"/></div>
+<h3>#1024 Terapagos</h3>
+<div class="regione">Paldea</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny)</div></div></div>
+<div class="card" data-region="Paldea" data-shiny="false"><div class="card-inner"><div class="card-front"><span class="fav-toggle star-icon" title="Segna come preferito">⭐</span>
+<div class="img-container"><img alt="Pecharunt" src="images/Paldea/Pecharunt.PNG"/></div>
+<h3>#1025 Pecharunt</h3>
+<div class="regione">Paldea</div>
+<label class="caught-toggle">
+<input class="caught-checkbox" type="checkbox"/>
+<span class="toggle-slider"></span>
+<span class="label-text">Catturato</span>
+</label>
+</div><div class="card-back"><strong>Disponibile in:</strong><br/>Violetto<br/><br/><strong>Metodo:</strong><br/>Storyline (no shiny)</div></div></div>
+</div>
+<div style="text-align: center; margin-top: 20px;">
+  <button id="fullResetButton" style="
+    margin: 5px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    background-color: crimson;
+    color: white;
+    border: none;
+    cursor: pointer;
+  ">
+    Reset Totale Salvataggi
+  </button>
+</div>
+
+
+<script>
+// Elementi principali
+const cards = Array.from(document.querySelectorAll('.card'));
+const grid = document.getElementById('pokedexGrid');
+const regionSelect = document.getElementById('regionSelect');
+const shinyCheckbox = document.getElementById('shinyOnly');
+const searchInput = document.getElementById('searchInput');
+const sortSelect = document.getElementById('sortSelect');
+const counter = document.getElementById('counter');
+const regionTitle = document.getElementById('regionTitle');
+
+// Chiave localStorage
+function getCaughtKey(isShiny) {
+  return isShiny ? 'pokedex-caught-shiny' : 'pokedex-caught';
+}
+const favKey = 'pokedex-favs';
+
+// Display dinamico
+function updateDisplay() {
+  const selectedRegion = regionSelect.value;
+  const showShinyOnly = shinyCheckbox.checked;
+  const searchTerm = searchInput.value.toLowerCase();
+  const sortOrder = sortSelect.value;
+  const caughtFilter = document.getElementById('caughtSelect').value;
+
+  let visibleCards = cards.filter(card => {
+    const region = card.getAttribute('data-region');
+    const isShiny = card.getAttribute('data-shiny') === 'true';
+    const name = card.querySelector('h3').textContent.toLowerCase();
+    const checkbox = card.querySelector('.caught-checkbox');
+    const isCaught = checkbox && checkbox.checked;
+
+    const matchRegion = selectedRegion === 'Tutte' || region === selectedRegion;
+    const matchShiny = !showShinyOnly || isShiny;
+    const matchSearch = name.includes(searchTerm);
+
+    let matchCaught = true;
+    if (caughtFilter === 'caught') matchCaught = isCaught;
+    else if (caughtFilter === 'uncaught') matchCaught = !isCaught;
+
+    return matchRegion && matchShiny && matchSearch && matchCaught;
+  });
+
+  // Ordinamento
+  visibleCards.sort((a, b) => {
+    const textA = a.querySelector('h3').textContent;
+    const textB = b.querySelector('h3').textContent;
+    const numA = parseInt(textA.match(/#(\d+)/)?.[1] || '0');
+    const numB = parseInt(textB.match(/#(\d+)/)?.[1] || '0');
+    const nameA = textA.replace(/^#\d+\s*/, '').toLowerCase();
+    const nameB = textB.replace(/^#\d+\s*/, '').toLowerCase();
+
+    switch (sortOrder) {
+      case 'dex-asc': return numA - numB;
+      case 'dex-desc': return numB - numA;
+      case 'name-asc': return nameA.localeCompare(nameB);
+      case 'name-desc': return nameB.localeCompare(nameA);
+      case 'fav-desc':
+        return (b.classList.contains('fav') ? 1 : 0) - (a.classList.contains('fav') ? 1 : 0);
+      default: return 0;
+    }
+  });
+
+  grid.innerHTML = '';
+  visibleCards.forEach(card => grid.appendChild(card));
+
+  counter.textContent = `${visibleCards.length} Pokémon Trovati`;
+  document.getElementById('noResults').style.display = visibleCards.length === 0 ? 'block' : 'none';
+  regionTitle.textContent = selectedRegion === 'Tutte'
+    ? 'Pokémon di Tutte le regioni'
+    : selectedRegion === 'Sconosciuto'
+      ? 'Pokémon di origine sconosciuta'
+      : `Pokémon di ${selectedRegion}`;
+}
+
+// Event listeners
+regionSelect.addEventListener("change", () => {
+  updateDisplay(); updateStats();
+});
+shinyCheckbox.addEventListener('change', updateDisplay);
+searchInput.addEventListener('input', updateDisplay);
+sortSelect.addEventListener('change', updateDisplay);
+document.getElementById('caughtSelect').addEventListener('change', updateDisplay);
+document.getElementById('resetButton').addEventListener('click', resetFilters);
+
+// Reset filtri
+function resetFilters() {
+  regionSelect.value = 'Tutte';
+  searchInput.value = '';
+  sortSelect.value = 'dex-asc';
+  document.getElementById('caughtSelect').value = 'all';
+  updateDisplay();
+}
+
+// Stato catturati
+function loadCaughtStatus() {
+  const shinyMode = document.getElementById('shinyOnly').checked;
+  const caughtKey = getCaughtKey(shinyMode);
+  const saved = JSON.parse(localStorage.getItem(caughtKey) || '{}');
+  document.querySelectorAll('.card').forEach(card => {
+    const name = card.querySelector('h3').textContent;
+    const checkbox = card.querySelector('.caught-checkbox');
+    if (checkbox) {
+      checkbox.checked = !!saved[name];
+      card.classList.toggle('caught', checkbox.checked);
+      checkbox.onchange = () => {
+        saved[name] = checkbox.checked;
+        localStorage.setItem(caughtKey, JSON.stringify(saved));
+        card.classList.toggle('caught', checkbox.checked);
+        updateStats();
+      };
+    }
+  });
+}
+// Flip delle card al click
+cards.forEach(card => {
+  card.addEventListener('click', () => card.classList.toggle('flipped'));
+});
+// Impedisce che il click sulla stellina faccia girare la card
+document.querySelectorAll('.fav-toggle').forEach(icon => {
+  icon.addEventListener('click', e => e.stopPropagation());
+});
+
+
+// Shiny toggle
+shinyCheckbox.addEventListener("change", () => {
+  const shinyMode = shinyCheckbox.checked;
+  document.body.classList.toggle("shiny-mode", shinyMode);
+
+  cards.forEach(card => {
+    const isShinyAvailable = card.dataset.shiny === 'true';
+    if (shinyMode && isShinyAvailable) card.classList.add('shiny-mode');
+    else card.classList.remove('shiny-mode');
+  });
+  loadCaughtStatus(); // aggiorna i toggle catturato in base alla modalità
+  updateDisplay();
+  updateStats(); // aggiorna subito la barra di completamento
+});
+
+
+
+// Stato preferiti
+function loadFavStatus() {
+  const savedFavs = JSON.parse(localStorage.getItem(favKey) || '{}');
+
+  document.querySelectorAll('.card').forEach(card => {
+    const name = card.querySelector('h3').textContent;
+    const favIcon = card.querySelector('.fav-toggle');
+
+    // Rimuove eventuale stato fav precedente
+    card.classList.remove('fav');
+
+    // Se salvato, aggiunge la classe
+    if (savedFavs[name]) {
+      card.classList.add('fav');
+    }
+
+    // Aggiunge l'event listener solo una volta (usando .onclick per evitare duplicati)
+    favIcon.onclick = () => {
+      const isFav = card.classList.toggle('fav');
+      savedFavs[name] = isFav;
+      localStorage.setItem(favKey, JSON.stringify(savedFavs));
+      updateStats();
+    };
+  });
+}
+
+// Stats
+function updateStats() {
+  // Prende solo le card attualmente visibili in griglia
+  const visibleCards = Array.from(document.querySelectorAll('#pokedexGrid .card'));
+  const totale = visibleCards.length;
+  const catturati = visibleCards.filter(card => card.querySelector('.caught-checkbox').checked);
+  const presi = catturati.length;
+  const percentuale = totale > 0 ? Math.round((presi / totale) * 100) : 0;
+  const filtro = regionSelect.value;
+  const testo = filtro === "Tutte"
+    ? `Completamento: ${presi} su ${totale} Pokémon catturati (${percentuale}%)`
+    : `${filtro}: ${presi} su ${totale} catturati (${percentuale}%)`;
+  document.getElementById("progress-summary").textContent = testo;
+}
+
+// Shiny toggle
+shinyCheckbox.addEventListener("change", () => {
+  const shinyMode = shinyCheckbox.checked;
+  document.body.classList.toggle("shiny-mode", shinyMode);
+  document.querySelectorAll('.card').forEach(card => {
+    const isShinyAvailable = card.getAttribute('data-shiny') === 'true';
+    const img = card.querySelector('.img-container img');
+    card.style.display = (shinyMode && !isShinyAvailable) ? 'none' : '';
+    if (isShinyAvailable && img) {
+      let src = img.getAttribute('src');
+      let parts = src.split('/');
+      if (parts.includes('shiny')) parts.splice(parts.indexOf('shiny'), 1);
+      const fileName = parts.pop();
+      const region = parts.pop();
+      const basePath = parts.join('/');
+      const newPath = shinyMode
+        ? `${basePath}/${region}/shiny/${fileName}`
+        : `${basePath}/${region}/${fileName}`;
+      img.setAttribute('src', newPath);
+    }
+  });
+    // Aggiorna lo sfondo del banner principale in base alla modalità shiny
+  const heroBanner = document.querySelector('.hero-banner');
+  if (heroBanner) {
+    heroBanner.style.backgroundImage = shinyMode
+      ? 'url("images/sfondo.png")'
+      : 'url("images/Notte.png")';
+  }
+
+  // Aggiorna le immagini dei Pokémon leggendari in alto quando si attiva/disattiva la modalità shiny
+  document.querySelectorAll('.legend-icon').forEach(legendImg => {
+    let src = legendImg.getAttribute('src');
+    let parts = src.split('/');
+    // Rimuove 'shiny' dal percorso se già presente
+    if (parts.includes('shiny')) {
+      parts.splice(parts.indexOf('shiny'), 1);
+    }
+    const fileName = parts.pop();
+    const region = parts.pop();
+    const basePath = parts.join('/');
+    const newPath = shinyMode
+      ? `${basePath}/${region}/shiny/${fileName}`
+      : `${basePath}/${region}/${fileName}`;
+    // Salta Mewtwo: non esiste uno sprite shiny nel pacchetto
+    if (!(shinyMode && fileName === 'Mewtwo.PNG')) {
+      legendImg.setAttribute('src', newPath);
+    }
+  });
+
+});
+
+// Reset totale
+function resetAllData() {
+  if (confirm("Sei sicuro di voler cancellare tutti i dati salvati (catture e preferiti)?")) {
+    localStorage.removeItem('pokedex-caught');
+    localStorage.removeItem('pokedex-caught-shiny');
+    localStorage.removeItem(favKey);
+    loadCaughtStatus();
+    loadFavStatus();
+    updateStats();
+    updateDisplay();
+  }
+}
+
+// Backup
+function downloadBackup() {
+  const data = {
+    caught: {
+      normal: JSON.parse(localStorage.getItem('pokedex-caught') || '{}'),
+      shiny: JSON.parse(localStorage.getItem('pokedex-caught-shiny') || '{}')
+    },
+    favs: JSON.parse(localStorage.getItem(favKey) || '{}')
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'pokedex-backup.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Reset Totale Salvataggi: catturati + preferiti
+document.getElementById('fullResetButton').addEventListener('click', () => {
+  if (!confirm("Sei sicuro di cancellare tutti i salvataggi (catture + preferiti)?")) return;
+
+  // Rimuove dal localStorage
+  localStorage.removeItem('pokedex-caught');
+  localStorage.removeItem('pokedex-caught-shiny');
+  localStorage.removeItem('pokedex-favs');
+
+  // Aggiorna visivamente catture e preferiti
+  loadCaughtStatus();
+  loadFavStatus();
+
+  // Aggiorna stats e griglia
+  updateStats();
+  updateDisplay();
+});
+
+// Avvio
+loadCaughtStatus();
+loadFavStatus();
+updateStats();
+updateDisplay();
+</script>
+</body>
+</html>
